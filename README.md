@@ -6,12 +6,23 @@
 - **图形界面（GUI，默认）**：双击 exe 弹出 Tkinter 窗口，三个目录选择器 + 开始按钮 + 实时滚动日志 + 一键打开报告/异常归档/日志目录。
 - **控制台模式**：`exe --cli` 走原命令行流水线，便于脚本化或定时任务调用。
 
+### 下载安装（给最终用户 · 与 GitHub Releases 对齐）
+
+**无需克隆仓库、无需安装 Python。** 可执行文件在 **[Releases（发行版）](https://github.com/Cltlinxiaoguo/camera-timecode-sync/releases)**，不在 `Code` 文件列表里（避免单文件过大、仓库臃肿）。
+
+1. 打开 **[Releases](https://github.com/Cltlinxiaoguo/camera-timecode-sync/releases)**，进入最新版本（例如 **v1.0.0**，带 **Latest** 标记）。  
+2. 展开 **Assets**，下载 **`相机同步检测工具.exe`**。  
+3. 将 [`camera_sync_config.yaml`](./camera_sync_config.yaml) 放到与 exe **同一目录**（若 Release 里附带了 yaml 附件，也可直接下载）。  
+4. 双击 exe 运行；按需修改 yaml 里的路径与裁剪参数。
+
+首次运行 OCR 可能需联网下载 PaddleOCR 模型到 `%USERPROFILE%\.paddleocr\`；离线环境可从已跑通的机器拷贝该目录。维护者上传 Release 的步骤见 [docs/release.md](./docs/release.md)。
+
+---
+
 > 配套文档：
 > - [需求与设计](./相机同步检测工具_需求与设计.md)
 > - [测试用例与自动化](./相机同步检测工具_测试用例与自动化.md)
 > - [发布到 GitHub（Release 流程）](./docs/release.md)
-
-**下载安装（给最终用户）**：请到你维护的 **GitHub Releases**（建议单独建业务仓库，例如 `camera-sync-tool`，不要用「用户名同名的 profile 仓库」放整项目）下载最新 **`相机同步检测工具.exe`**，与同目录的 `camera_sync_config.yaml` 一起使用。`dist/` 不会进 Git 主分支；首次上传大体积请走 **Release 附件**，见 [docs/release.md](./docs/release.md)。
 
 ---
 
