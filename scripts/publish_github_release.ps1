@@ -1,29 +1,7 @@
 #Requires -Version 5.1
-<#
-.SYNOPSIS
-    使用 GitHub CLI (gh) 创建 Release 并上传打包好的 exe。
+# Publishes a GitHub Release with gh. File is ASCII-only so Windows PowerShell 5.1
+# (default encoding) parses it reliably. See docs/release.md
 
-.DESCRIPTION
-    默认上传 dist\相机同步检测工具.exe，并在存在时附带 camera_sync_config.yaml。
-    需已安装 gh 并执行过 gh auth login（或设置环境变量 GH_TOKEN / GITHUB_TOKEN）。
-
-    参考: docs/release.md
-
-.PARAMETER Tag
-    版本标签，例如 v1.0.0（须已存在对应 git tag，或与仓库当前提交一致）
-
-.PARAMETER ExePath
-    可执行文件路径；默认项目根下 dist\相机同步检测工具.exe
-
-.PARAMETER NotesFile
-    发布说明 Markdown（UTF-8）；使用 gh 的 --notes-file
-
-.PARAMETER Draft
-    创建为草稿 Release
-
-.PARAMETER DryRun
-    只打印将要执行的命令，不实际创建
-#>
 param(
     [Parameter(Mandatory = $true)]
     [string]$Tag,
@@ -43,21 +21,26 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root = Split-Path -Parent $ScriptDir
 
 if (-not $ExePath) {
-    $ExePath = Join-Path $Root "dist\相机同步检测工具.exe"
+    $distDir = Join-Path $Root "dist"
+    $found = Get-ChildItem -LiteralPath $distDir -File -Filter "*.exe" -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if (-not $found) {
+        Write-Error "No .exe under dist/. Build first: python -m PyInstaller --noconfirm camera_sync.spec"
+    }
+    $ExePath = $found.FullName
 }
 
 $ExePath = [System.IO.Path]::GetFullPath($ExePath)
 if (-not (Test-Path -LiteralPath $ExePath)) {
-    Write-Error "找不到打包产物: $ExePath （请先在项目根目录执行: python -m PyInstaller --noconfirm camera_sync.spec）"
+    Write-Error "Exe not found: $ExePath"
 }
 
 function Resolve-GhExe {
     $g = Get-Command gh -ErrorAction SilentlyContinue
     if ($g) { return $g.Source }
-    foreach ($cand in @(
-            "$env:ProgramFiles\GitHub CLI\gh.exe",
-            "${env:ProgramFiles(x86)}\GitHub CLI\gh.exe"
-        )) {
+    $c1 = Join-Path $env:ProgramFiles "GitHub CLI\gh.exe"
+    $c2 = Join-Path ${env:ProgramFiles(x86)} "GitHub CLI\gh.exe"
+    foreach ($cand in @($c1, $c2)) {
         if ($cand -and (Test-Path -LiteralPath $cand)) { return $cand }
     }
     return $null
@@ -65,10 +48,9 @@ function Resolve-GhExe {
 
 $GhExe = Resolve-GhExe
 if (-not $GhExe) {
-    Write-Error "未找到 GitHub CLI (gh)。可执行: winget install GitHub.cli  然后重新打开终端。"
+    Write-Error "gh not found. Install: winget install GitHub.cli"
 }
 
-# 默认说明文件：docs/release_notes/<Tag>.md
 if (-not $NotesFile) {
     $autoNotes = Join-Path $Root "docs\release_notes\$Tag.md"
     if ($Tag.StartsWith("v") -and -not (Test-Path -LiteralPath $autoNotes)) {
@@ -81,54 +63,56 @@ if (-not $NotesFile) {
 }
 
 if ($NotesFile -ne "" -and -not (Test-Path -LiteralPath $NotesFile)) {
-    Write-Error "找不到说明文件: $NotesFile"
+    Write-Error "Notes file not found: $NotesFile"
 }
 
 $yamlPath = Join-Path $Root "camera_sync_config.yaml"
+$Repo = "Cltlinxiaoguo/camera-timecode-sync"
+$title = "Camera timecode sync $Tag"
 
-$title = "相机同步检测工具 $Tag"
+$ghList = New-Object System.Collections.Generic.List[string]
+$ghList.Add("release")
+$ghList.Add("create")
+$ghList.Add($Tag)
+$ghList.Add("--repo")
+$ghList.Add($Repo)
+$ghList.Add("--title")
+$ghList.Add($title)
 
-$ghArgs = @(
-    "release", "create", $Tag,
-    "--repo", "Cltlinxiaoguo/camera-timecode-sync",
-    "--title", $title
-)
 if ($NotesFile -ne "") {
     $nf = [System.IO.Path]::GetFullPath($NotesFile)
-    $ghArgs += "--notes-file", $nf
-} else {
-    $ghArgs += "--notes", "版本 $Tag — 详见 README 与 docs/release.md。"
+    $ghList.Add("--notes-file")
+    $ghList.Add($nf)
 }
-$ghArgs += $ExePath
-if (Test-Path -LiteralPath $yamlPath) {
-    $ghArgs += [System.IO.Path]::GetFullPath($yamlPath)
-}
-if ($Draft) {
-    $ghArgs += "--draft"
+else {
+    $ghList.Add("--notes")
+    $ghList.Add("Release $Tag. See README and docs/release.md.")
 }
 
+$ghList.Add($ExePath)
+if (Test-Path -LiteralPath $yamlPath) {
+    $ghList.Add([System.IO.Path]::GetFullPath($yamlPath))
+}
+if ($Draft) {
+    $ghList.Add("--draft")
+}
+
+$ghArgs = $ghList.ToArray()
+
 if ($DryRun) {
-    $quoted = @('&', "`"$GhExe`"") + ($ghArgs | ForEach-Object {
-            if ($null -eq $_) { "" }
-            elseif ($_ -match '\s') { "`"$_`"" } else { $_ }
-        })
-    Write-Host "[DryRun] $($quoted -join ' ')" -ForegroundColor Cyan
+    Write-Host ("[DryRun] {0} {1}" -f $GhExe, ($ghArgs -join " ")) -ForegroundColor Cyan
     exit 0
 }
 
-Write-Host "使用: $GhExe" -ForegroundColor DarkGray
-Write-Host "正在创建 Release 并上传附件…" -ForegroundColor Green
+Write-Host "Using: $GhExe" -ForegroundColor DarkGray
+Write-Host "Creating release and uploading assets..." -ForegroundColor Green
 & $GhExe @ghArgs
 if ($LASTEXITCODE -ne 0) {
-    Write-Host @"
-
-若提示「already exists」：该 Tag 下已有 Release，可到网页删除草稿/旧 Release 后重试，
-或使用: & `"$GhExe`" release upload $Tag `"$ExePath`" --repo Cltlinxiaoguo/camera-timecode-sync --clobber
-
-若提示未登录：先在本机执行一次（浏览器授权）：
-  & `"$GhExe`" auth login -h github.com -p https -w
-
-"@ -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "If release exists, delete it on GitHub or run:" -ForegroundColor Yellow
+    Write-Host "  & `"$GhExe`" release upload $Tag `"$ExePath`" --repo $Repo --clobber" -ForegroundColor Yellow
+    Write-Host "If not logged in:" -ForegroundColor Yellow
+    Write-Host "  & `"$GhExe`" auth login -h github.com -p https -w" -ForegroundColor Yellow
     exit $LASTEXITCODE
 }
-Write-Host "完成: https://github.com/Cltlinxiaoguo/camera-timecode-sync/releases" -ForegroundColor Green
+Write-Host "Done: https://github.com/$Repo/releases" -ForegroundColor Green
