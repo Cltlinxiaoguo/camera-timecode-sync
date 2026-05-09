@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PyInstaller: 打包 exe（camera_sync.spec）",
+      "type": "shell",
+      "command": "python -m PyInstaller --noconfirm camera_sync.spec",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "pytest: 运行测试（run_tests.bat）",
+      "type": "shell",
+      "command": "run_tests.bat",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "GitHub Release: 上传 dist exe（需 gh auth）",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish_github_release.ps1 -Tag ${input:releaseTag}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "releaseTag",
+      "type": "promptString",
+      "description": "Git 标签，例如 v1.0.0（须先打包好 dist\\相机同步检测工具.exe）",
+      "default": "v1.0.0"
+    }
+  ]
+}

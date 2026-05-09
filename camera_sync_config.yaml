@@ -1,0 +1,89 @@
+# =====================================================================
+# 相机同步检测工具 配置文件
+# ---------------------------------------------------------------------
+# 与可执行文件 (相机同步检测工具.exe) 同目录维护。
+# 修改后无需重新打包 exe，下次运行即生效。
+# 所有路径支持绝对路径；相对路径以本配置文件所在目录为基准。
+# 编码：UTF-8（请用支持 UTF-8 的编辑器保存，例如 VS Code、记事本另存为 UTF-8）。
+# =====================================================================
+
+paths:
+  # 源 CR2 输入目录（相机原始 RAW 图所在文件夹）
+  cr2_dir: 'C:\path\to\cr2'
+
+  # 中间帧 JPG 输出目录（每次运行启动时会被清空）
+  jpg_dir: 'C:\path\to\frames'
+
+  # 异常归档目录（不同步样本将被复制到此目录；每次运行启动时会被清空）
+  false_dir: 'C:\path\to\false'
+
+  # Excel 报告输出目录（带时间戳，不会覆盖历史报告）
+  # 留空字符串表示与 exe 同目录
+  excel_dir: 'C:\path\to\reports'
+
+  # 日志目录
+  # 留空字符串表示 exe 同目录下的 logs/ 子目录
+  log_dir: 'C:\path\to\logs'
+
+
+crop:
+  # CR2 转 JPG 时使用的裁剪框（像素）。
+  # 起点 (x, y) 为左上角，width / height 为框宽高。
+  # 默认值来自原脚本 Cr2 Cut Into Jpg.py：x=740, y=2240, w=1621, h=1428
+  x: 740
+  y: 2240
+  width: 1621
+  height: 1428
+
+
+ocr:
+  # PaddleOCR 语种：'ch' 识别中英文混排（默认），'en' 仅英文
+  lang: 'ch'
+
+  # 是否启用 GPU；多数现场为纯 CPU，保持 false
+  use_gpu: false
+
+  # 时间码正则（fullmatch 匹配；与原脚本一致）
+  # 形如 00:MM:SS:FF（小时:分:秒:帧）
+  timecode_regex: '\d{2}:\d{2}:\d{2}:\d{2}'
+
+  # 强制将识别到的时间码首段（小时位）覆盖为 '00'
+  # 用于消除相机录制时间小时位差异，仅比较分/秒/帧是否同步
+  # 与原脚本行为一致；如需保留原值改为 false
+  force_hour_zero: true
+
+
+runtime:
+  # OCR 多进程数。
+  # - 源码模式：0 表示自动取 min(8, cpu_count())；正数按设置使用，但不超过 cpu 数与图片数。
+  # - **冻结模式（exe 直接运行）会忽略此项强制为 1**——
+  #   PyInstaller onefile + Windows + PaddleOCR 多进程存在已知子进程崩溃问题，
+  #   单进程稳定且足够（约 0.3~1 秒/张，500 张 4 分钟内完成）。
+  max_workers: 0
+
+  # 单图 OCR 失败是否中止全流程；false 表示记录错误后继续
+  fail_fast_on_ocr_error: false
+
+
+excel:
+  # Excel 报告文件名前缀；最终文件名形如 <prefix>_YYYYMMDD_HHMMSS.xlsx
+  filename_prefix: 'Sync_n_Timecode'
+
+  # 不同步行的高亮填充色（六位十六进制 RGB，无 # 前缀，openpyxl 风格）
+  # 默认 FFCCCC 与原脚本保持一致（淡红色）
+  highlight_color: 'FFCCCC'
+
+
+pipeline:
+  # 流程开关；正常情况全部保持 true
+  # 调试时可关闭某一步以加快迭代
+  do_clear_jpg_dir: true
+  do_cr2_to_jpg: true
+  do_ocr_report: true
+  do_clear_false_dir: true
+  do_copy_false: true
+
+
+ui:
+  # 运行结束是否提示 “按回车键退出”，便于查看日志
+  pause_before_exit: true

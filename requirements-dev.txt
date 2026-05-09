@@ -1,0 +1,6 @@
+# 相机同步检测工具 - 开发与测试依赖
+-r requirements.txt
+pytest>=7.4
+pytest-cov>=4.1
+freezegun>=1.4
+pyinstaller>=6.4

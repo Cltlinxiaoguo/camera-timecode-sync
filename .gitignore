@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
+# 运行产物
+logs/
+*.xlsx
+frames/
+false/
+input_cr2/
+
+# 编辑器（保留可提交的 tasks.json，其余仍忽略）
+.vscode/*
+!.vscode/tasks.json
+.idea/
+*.swp
+
+# 系统
+Thumbs.db
+.DS_Store
+
+# 临时
+_filenames.txt

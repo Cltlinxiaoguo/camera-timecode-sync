@@ -1,0 +1,12 @@
+# 相机同步检测工具 - 运行时依赖
+# 与原脚本完全等价的依赖；版本范围保持向后兼容
+# PaddleOCR 锁在 2.x：原脚本使用 ocr.ocr() / result[0] 结构，3.x 已迁移到 predict() 行为不兼容
+PyYAML>=6.0
+rawpy>=0.18
+imageio>=2.31
+opencv-python>=4.8
+paddleocr>=2.7,<3.0
+paddlepaddle>=2.5,<3.0
+pandas>=2.0
+openpyxl>=3.1
+matplotlib>=3.7
